@@ -4,16 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 function ReportCategories() {
   const navigate = useNavigate();
-  const { siteId } = useParams(); // Get siteId from URL
+  const { site_name } = useParams(); // Get site_name from URL
 
   // Define categories
   const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
 
   const handleCategoryClick = (category) => {
-    navigate(`/${siteId}/dashboard/reports/${category.toLowerCase()}/dates`);
+    navigate(`/${site_name}/dashboard/reports/${category.toLowerCase()}/dates`);
   };
 
-  const handleBackClick = () => navigate(`/${siteId}/dashboard`);
+  const handleBackClick = () => navigate(`/${site_name}/dashboard`);
   const handleHomeClick = () => navigate('/');
 
   return (

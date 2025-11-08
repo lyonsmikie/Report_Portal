@@ -5,7 +5,7 @@ import api from '../api';
 
 function UploadReport() {
   const navigate = useNavigate();
-  const { siteId } = useParams(); // get siteId from URL
+  const { site_name } = useParams(); // get site_name from URL
 
   const [category, setCategory] = useState('MACD');
   const [file, setFile] = useState(null);
@@ -22,7 +22,7 @@ function UploadReport() {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('site_id', siteId);
+    formData.append('site_id', site_name);
     formData.append('category', category);
     formData.append('file', file);
 
@@ -37,7 +37,7 @@ function UploadReport() {
     }
   };
 
-  const goBack = () => navigate(`/dashboard/${siteId}`);
+  const goBack = () => navigate(`/dashboard/${site_name}`);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

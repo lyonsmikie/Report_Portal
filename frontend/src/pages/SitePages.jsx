@@ -5,12 +5,8 @@ import { useNavigate } from 'react-router-dom';
 function SitePages() {
   const navigate = useNavigate();
 
-  const handleSiteClick = (siteId) => {
-    navigate(`/${siteId}/dashboard`);
-  };
-
-  const handleSelectSite = (siteId) => {
-    navigate(`/${siteId}/dashboard`);
+  const handleSelectSite = (site_name) => {
+    navigate(`/${site_name.toLowerCase()}/dashboard`);
   };
 
   return (

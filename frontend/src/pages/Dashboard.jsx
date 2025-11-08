@@ -4,10 +4,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { siteId } = useParams(); // Get selected site from URL
+  const { site_name } = useParams(); // Get selected site from URL
 
   const handleCategoryClick = (category) => {
-    navigate(`/${siteId}/dashboard/reports/${category.toLowerCase()}`);
+    navigate(`/${site_name}/dashboard/reports/${category.toLowerCase()}`);
   };
 
   const handleBackClick = () => {

@@ -4,18 +4,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 function ReportViewer() {
-  const { siteId, category, date } = useParams(); // get siteId from URL
+  const { site_name, category, date } = useParams(); // get site_name from URL
   const navigate = useNavigate();
 
   const [reports, setReports] = useState([]);
 
   useEffect(() => {
-    api.get(`/reports/${siteId}/${category}/${date}`)
+    api.get(`/reports/${site_name}/${category}/${date}`)
       .then(res => setReports(res.data))
       .catch(err => console.error(err));
-  }, [siteId, category, date]);
-
-  const goBack = () => navigate(`/dashboard/${siteId}/reports/${category}`);
+  }, [site_name, category, date]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -24,10 +22,10 @@ function ReportViewer() {
         <button onClick={() => navigate('/')} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
           ← Home
         </button>
-        <button onClick={() => navigate(`/${siteId}/dashboard`)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+        <button onClick={() => navigate(`/${site_name}/dashboard`)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
           ← Dashboard
         </button>
-        <button onClick={() => navigate(`/${siteId}/dashboard/reports/${category}`)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
+        <button onClick={() => navigate(`/${site_name}/dashboard/reports/${category}`)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
           ← Dates
         </button>
       </div>

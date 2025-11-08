@@ -4,13 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 function ReportDates() {
-  const { siteId, category } = useParams(); // siteId from URL
+  const { site_name, category } = useParams(); // site_name from URL
   const navigate = useNavigate();
 
   const [dates, setDates] = useState([]);
 
   useEffect(() => {
-    api.get(`/reports/${siteId}/${category}`)
+    api.get(`/reports/${site_name}/${category}`)
       .then(res => {
         const uniqueDates = [
           ...new Set(res.data.map(r => new Date(r.date).toISOString().split('T')[0]))
@@ -18,13 +18,13 @@ function ReportDates() {
         setDates(uniqueDates);
       })
       .catch(err => console.error(err));
-  }, [siteId, category]);
+  }, [site_name, category]);
 
   const handleDateClick = (date) => {
-    navigate(`/${siteId}/dashboard/reports/${category}/${date}/view`);
+    navigate(`/${site_name}/dashboard/reports/${category}/${date}/view`);
   };
 
-  const goBackToDashboard = () => navigate(`/${siteId}/dashboard`);
+  const goBackToDashboard = () => navigate(`/${site_name}/dashboard`);
   const goHome = () => navigate('/');
 
   return (
