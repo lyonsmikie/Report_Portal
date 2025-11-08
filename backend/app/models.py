@@ -19,8 +19,8 @@ class User(Base):
 class Report(Base):
     __tablename__ = "reports"
     id = Column(Integer, primary_key=True, index=True)
-    site_id = Column(Integer, ForeignKey("sites.id"))
-    file_name = Column(String)
-    file_type = Column(String)  # PDF or Excel
-    date = Column(DateTime)
-    site = relationship("Site")
+    site_name = Column(String, nullable=False)   # changed from site_id
+    category = Column(String, nullable=False)
+    file_name = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    date = Column(DateTime(timezone=True), server_default=func.now())
