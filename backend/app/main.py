@@ -9,6 +9,7 @@ from . import models, crud, auth
 from datetime import datetime
 import shutil
 import os
+import uuid
 
 # --- Create database tables ---
 models.Base.metadata.create_all(bind=engine)
@@ -118,31 +119,69 @@ async def upload_report(
     site_name: str = Form(...),
     category: str = Form(...),
     date: str = Form(None),
+    override: bool = Form(False),
+    save_as_new: bool = Form(False),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     try:
-        # Parse date or default to now
         report_date = datetime.strptime(date, "%Y-%m-%d") if date and date.strip() else datetime.now()
-        
-        # Format date for filename
         report_date_str = report_date.strftime("%d%m%Y")
-        
-        # Safe filename
-        import uuid
         file_ext = file.filename.split('.')[-1]
-        filename = f"{category}_{report_date_str}.{file_ext}"
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
 
+        base_filename = f"{category}_{report_date_str}.{file_ext}"
+        file_path = os.path.join(UPLOAD_FOLDER, base_filename)
+
+        existing_reports = db.query(models.Report).filter(
+            models.Report.site_name == site_name.lower(),
+            models.Report.category == category.lower(),
+            models.Report.date == report_date
+        ).all()
+
+        if existing_reports:
+            if override:
+                # Delete existing files and DB entries
+                for r in existing_reports:
+                    existing_file_path = os.path.join(UPLOAD_FOLDER, r.file_name)
+                    if os.path.exists(existing_file_path):
+                        os.remove(existing_file_path)
+                    db.delete(r)
+                db.commit()
+                # Use base filename for override
+                filename = base_filename
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+            elif save_as_new:
+                # Existing iterations
+                existing_numbers = [1]  # original file counts as iteration 1
+                for r in existing_reports:
+                    fname_base = r.file_name.rsplit('.', 1)[0]  # remove extension
+                    parts = fname_base.split('_')
+                    # If last part is numeric AND length <= 3 (to capture _2, _3 etc)
+                    if parts[-1].isdigit() and len(parts[-1]) <= 3:
+                        existing_numbers.append(int(parts[-1]))
+                next_num = max(existing_numbers) + 1
+                filename = f"{category}_{report_date_str}_{next_num}.{file_ext}"
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"A report for {category} on {report_date.strftime('%Y-%m-%d')} already exists. Set override or save_as_new."
+                )
+        else:
+            filename = base_filename
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+        # Save uploaded file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        
-        # DB record
+
         new_report = models.Report(
             site_name=site_name.lower(),
             category=category.lower(),
             file_name=filename,
-            file_type=file.filename.split('.')[-1],
+            file_type=file_ext,
             date=report_date
         )
         db.add(new_report)
@@ -153,16 +192,18 @@ async def upload_report(
             "message": "Report uploaded successfully",
             "report": {
                 "id": new_report.id,
-                "file_name": filename,  # already in Category_ddmmyyyy format
+                "file_name": filename,
                 "site_name": new_report.site_name,
                 "category": new_report.category,
                 "date": new_report.date.strftime("%Y-%m-%d")
             }
         }
+
+    except HTTPException:
+        raise
     except Exception as e:
         print("Upload error:", e)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # ============================================================
 # REPORT FILE ACCESS (DIRECT BY ID)
@@ -188,7 +229,8 @@ def get_report_dates(site_name: str, category: str, db: Session = Depends(get_db
     """Return all unique report dates for a given site and category."""
     reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
 
-    # Remove DB entries for files that no longer exist
+    # Filter reports: remove DB entries for files that are missing
+    existing_reports = []
     for r in reports:
         file_path = os.path.join(UPLOAD_FOLDER, r.file_name)
         if not os.path.exists(file_path):
@@ -196,15 +238,10 @@ def get_report_dates(site_name: str, category: str, db: Session = Depends(get_db
     db.commit()
 
     # Re-fetch reports after deletion
+    # Re-fetch reports after deletion
     reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
-    
-    # Filter out reports whose file no longer exists
-    existing_reports = [
-        r for r in reports if os.path.exists(os.path.join(UPLOAD_FOLDER, r.file_name))
-    ]
-
     unique_dates = sorted(
-        list({r.date.strftime("%Y-%m-%d") for r in existing_reports}),
+        list({r.date.strftime("%Y-%m-%d") for r in reports}),
         reverse=True,
     )
     return unique_dates
@@ -218,10 +255,14 @@ def delete_report(report_id: int, db: Session = Depends(get_db)):
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    # Delete file from disk
+    # Full file path
     file_path = os.path.join(UPLOAD_FOLDER, report.file_name)
+
+    # Delete the file if it exists
     if os.path.exists(file_path):
         os.remove(file_path)
+    else:
+        print(f"⚠️ File {report.file_name} not found on disk")
 
     # Remove from DB
     db.delete(report)

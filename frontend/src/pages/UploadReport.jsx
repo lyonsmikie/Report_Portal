@@ -5,12 +5,13 @@ import api from '../api';
 
 function UploadReport() {
   const navigate = useNavigate();
-  const { site_name } = useParams(); // Admin site_name
+  const { site_name } = useParams();
 
   const [category, setCategory] = useState('MACD');
   const [file, setFile] = useState(null);
   const [reportDate, setReportDate] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
 
@@ -18,23 +19,58 @@ function UploadReport() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) return alert("Please select a file to upload.");
+    if (!reportDate) return alert("Please select a date.");
 
-    const formData = new FormData();
-    formData.append('site_name', site_name); // Pass the site_name (personal/shared/admin)
-    formData.append('category', category);
-    formData.append('date', reportDate);
-    formData.append('file', file);
+    setLoading(true);
+    setMessage('Uploading...');
 
     try {
+      // Step 1: Check if a report already exists
+      const existing = await api.get(`/reports/${site_name}/${category}/${reportDate}`);
+      let override = false;
+      let saveAsNew = false;
+
+      if (existing.data.length > 0) {
+        const choice = window.prompt(
+          `A report already exists for ${category} on ${reportDate}.\n` +
+          `Type 'O' to Override, 'N' to Save as New, 'C' to Cancel`
+        );
+        if (!choice || choice.toUpperCase() === 'C') {
+          setMessage('Upload cancelled.');
+          setLoading(false);
+          return;
+        } else if (choice.toUpperCase() === 'O') {
+          override = true;
+        } else if (choice.toUpperCase() === 'N') {
+          saveAsNew = true;
+        }
+      }
+
+      // Step 2: Prepare form data
+      const formData = new FormData();
+      formData.append('site_name', site_name);
+      formData.append('category', category);
+      formData.append('date', reportDate);
+      formData.append('file', file);
+      formData.append('override', override); // send override flag to backend
+      formData.append('save_as_new', saveAsNew);
+
+      // Step 3: Upload
       const res = await api.post('/upload-report', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
       setMessage(`Uploaded: ${res.data.report.file_name}`);
+      setFile(null);
+
     } catch (err) {
-        console.error(err.response?.data || err);
-        setMessage(`Upload failed: ${err.response?.data?.detail || 'Unknown error'}`);
-      }
+      console.error(err.response?.data || err);
+      const detail = err.response?.data?.detail || 'Unknown error';
+      setMessage(`Upload failed: ${detail}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const goBack = () => navigate(`/${site_name}/dashboard`);
@@ -65,14 +101,14 @@ function UploadReport() {
         </div>
 
         <div>
-            <label className="block mb-1 font-semibold">Select Date</label>
-            <input
-                type="date"
-                value={reportDate}
-                onChange={(e) => setReportDate(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-            />
-            </div>
+          <label className="block mb-1 font-semibold">Select Date</label>
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(e) => setReportDate(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+          />
+        </div>
 
         <div>
           <label className="block mb-1 font-semibold">Select File</label>
@@ -81,9 +117,10 @@ function UploadReport() {
 
         <button
           type="submit"
+          disabled={loading}
           className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
         >
-          Upload
+          {loading ? 'Uploading...' : 'Upload'}
         </button>
 
         {message && <p className="mt-2 text-center text-gray-700">{message}</p>}

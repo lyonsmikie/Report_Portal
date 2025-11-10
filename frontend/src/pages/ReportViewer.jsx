@@ -1,7 +1,7 @@
 // src/pages/ReportViewer.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { deleteReport } from '../api';
 
 function ReportViewer() {
   const { site_name, category, date } = useParams();
@@ -15,47 +15,83 @@ function ReportViewer() {
       .catch(err => console.error(err));
   }, [site_name, category, date]);
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this report?')) {
+      try {
+        await deleteReport(id);
+        setReports((prev) => prev.filter((r) => r.id !== id));
+        alert('Report deleted successfully.');
+      } catch (err) {
+        alert(`Failed to delete report: ${err.message}`);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      {/* Navigation buttons */}
       <div className="flex justify-between mb-6">
-        <button onClick={() => navigate('/')} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
           ← Home
         </button>
-        <button onClick={() => navigate(`/${site_name}/dashboard`)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+        <button
+          onClick={() => navigate(`/${site_name}/dashboard`)}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
           ← Dashboard
         </button>
-        <button onClick={() => navigate(`/${site_name}/dashboard/reports/${category}/dates`)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
+        <button
+          onClick={() => navigate(`/${site_name}/dashboard/reports/${category}/dates`)}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
           ← Dates
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">{category.toUpperCase()} Report — {date}</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        {category.toUpperCase()} Report — {date}
+      </h1>
 
       {reports.length === 0 ? (
         <p className="text-center text-gray-600">No reports found for this date.</p>
       ) : (
         <div className="max-w-4xl mx-auto space-y-4">
-          {reports.map(report => (
-            <div key={report.id} className="bg-white p-6 shadow rounded">
-              <p className="mb-4"><strong>File Name:</strong> {report.file_name}</p>
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className="bg-white p-6 shadow rounded flex justify-between items-start"
+            >
+              <div className="flex-1">
+                <p className="mb-4">
+                  <strong>File Name:</strong> {report.file_name}
+                </p>
 
-              {report.file_type === 'pdf' ? (
-                <iframe
-                  src={`http://localhost:8000/uploaded_reports/${report.file_name}`}
-                  width="100%"
-                  height="600px"
-                  title={report.file_name}
-                />
-              ) : (
-                <a
-                  href={`http://localhost:8000/uploaded_reports/${report.file_name}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline"
-                >
-                  Download {report.file_name}
-                </a>
-              )}
+                {report.file_type === 'pdf' ? (
+                  <iframe
+                    src={`http://localhost:8000/uploaded_reports/${report.file_name}`}
+                    width="100%"
+                    height="600px"
+                    title={report.file_name}
+                    className="rounded border"
+                  />
+                ) : (
+                  <a
+                    href={`http://localhost:8000/uploaded_reports/${report.file_name}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    Download {report.file_name}
+                  </a>
+                )}
+              </div>
+
+              <button
+                onClick={() => handleDelete(report.id)}
+                className="ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
