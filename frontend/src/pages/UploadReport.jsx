@@ -5,25 +5,25 @@ import api from '../api';
 
 function UploadReport() {
   const navigate = useNavigate();
-  const { site_name } = useParams(); // get site_name from URL
+  const { site_name } = useParams(); // Admin site_name
 
   const [category, setCategory] = useState('MACD');
   const [file, setFile] = useState(null);
+  const [reportDate, setReportDate] = useState('');
   const [message, setMessage] = useState('');
 
   const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('site_id', site_name);
+    formData.append('site_name', site_name); // Pass the site_name (personal/shared/admin)
     formData.append('category', category);
+    formData.append('date', reportDate);
     formData.append('file', file);
 
     try {
@@ -32,12 +32,12 @@ function UploadReport() {
       });
       setMessage(`Uploaded: ${res.data.report.file_name}`);
     } catch (err) {
-      console.error(err);
-      setMessage('Upload failed.');
-    }
+        console.error(err.response?.data || err);
+        setMessage(`Upload failed: ${err.response?.data?.detail || 'Unknown error'}`);
+      }
   };
 
-  const goBack = () => navigate(`/dashboard/${site_name}`);
+  const goBack = () => navigate(`/${site_name}/dashboard`);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -51,7 +51,6 @@ function UploadReport() {
       <h1 className="text-3xl font-bold mb-6 text-center">Upload Report</h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white p-6 rounded shadow space-y-4">
-        {/* Category selection */}
         <div>
           <label className="block mb-1 font-semibold">Select Category</label>
           <select
@@ -65,7 +64,16 @@ function UploadReport() {
           </select>
         </div>
 
-        {/* File upload */}
+        <div>
+            <label className="block mb-1 font-semibold">Select Date</label>
+            <input
+                type="date"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+            />
+            </div>
+
         <div>
           <label className="block mb-1 font-semibold">Select File</label>
           <input type="file" onChange={handleFileChange} className="w-full" />

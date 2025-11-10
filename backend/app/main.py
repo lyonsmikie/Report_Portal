@@ -106,7 +106,8 @@ def get_reports_by_date(site_name: str, category: str, date: str, db: Session = 
 # FILE UPLOAD
 # ============================================================
 
-UPLOAD_FOLDER = "./uploaded_reports"
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "..", "uploaded_reports")
+UPLOAD_FOLDER = os.path.abspath(UPLOAD_FOLDER)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Serve uploaded files
@@ -116,43 +117,52 @@ app.mount("/uploaded_reports", StaticFiles(directory=UPLOAD_FOLDER), name="uploa
 async def upload_report(
     site_name: str = Form(...),
     category: str = Form(...),
+    date: str = Form(None),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    """Upload and register a new report file."""
-    site_name = site_name.lower()
-    category = category.lower()
+    try:
+        # Parse date or default to now
+        report_date = datetime.strptime(date, "%Y-%m-%d") if date and date.strip() else datetime.now()
+        
+        # Format date for filename
+        report_date_str = report_date.strftime("%d%m%Y")
+        
+        # Safe filename
+        import uuid
+        file_ext = file.filename.split('.')[-1]
+        filename = f"{category}_{report_date_str}.{file_ext}"
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    # Ensure upload folder exists
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # DB record
+        new_report = models.Report(
+            site_name=site_name.lower(),
+            category=category.lower(),
+            file_name=filename,
+            file_type=file.filename.split('.')[-1],
+            date=report_date
+        )
+        db.add(new_report)
+        db.commit()
+        db.refresh(new_report)
 
-    # Save file to disk
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        return {
+            "message": "Report uploaded successfully",
+            "report": {
+                "id": new_report.id,
+                "file_name": filename,  # already in Category_ddmmyyyy format
+                "site_name": new_report.site_name,
+                "category": new_report.category,
+                "date": new_report.date.strftime("%Y-%m-%d")
+            }
+        }
+    except Exception as e:
+        print("Upload error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Save to DB
-    new_report = models.Report(
-        site_name=site_name,
-        category=category,
-        file_name=file.filename,
-        file_type=file.filename.split(".")[-1],
-        date=datetime.now(),
-    )
-
-    db.add(new_report)
-    db.commit()
-    db.refresh(new_report)
-
-    return {
-        "message": "Report uploaded successfully",
-        "report": {
-            "id": new_report.id,
-            "file_name": new_report.file_name,
-            "site_name": new_report.site_name,
-            "category": new_report.category,
-        },
-    }
 
 # ============================================================
 # REPORT FILE ACCESS (DIRECT BY ID)
@@ -177,8 +187,43 @@ def get_report_file(report_id: int, db: Session = Depends(get_db)):
 def get_report_dates(site_name: str, category: str, db: Session = Depends(get_db)):
     """Return all unique report dates for a given site and category."""
     reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
+
+    # Remove DB entries for files that no longer exist
+    for r in reports:
+        file_path = os.path.join(UPLOAD_FOLDER, r.file_name)
+        if not os.path.exists(file_path):
+            db.delete(r)
+    db.commit()
+
+    # Re-fetch reports after deletion
+    reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
+    
+    # Filter out reports whose file no longer exists
+    existing_reports = [
+        r for r in reports if os.path.exists(os.path.join(UPLOAD_FOLDER, r.file_name))
+    ]
+
     unique_dates = sorted(
-        list({r.date.strftime("%Y-%m-%d") for r in reports}),
+        list({r.date.strftime("%Y-%m-%d") for r in existing_reports}),
         reverse=True,
     )
     return unique_dates
+
+# ============================================================
+# DELETED REPORTS
+# ============================================================
+@app.delete("/delete-report/{report_id}")
+def delete_report(report_id: int, db: Session = Depends(get_db)):
+    report = db.query(models.Report).filter(models.Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    # Delete file from disk
+    file_path = os.path.join(UPLOAD_FOLDER, report.file_name)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # Remove from DB
+    db.delete(report)
+    db.commit()
+    return {"detail": "Report deleted successfully"}

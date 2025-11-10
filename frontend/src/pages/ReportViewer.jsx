@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 function ReportViewer() {
-  const { site_name, category, date } = useParams(); // get site_name from URL
+  const { site_name, category, date } = useParams();
   const navigate = useNavigate();
 
   const [reports, setReports] = useState([]);
@@ -17,7 +17,6 @@ function ReportViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {/* Back Button */}
       <div className="flex justify-between mb-6">
         <button onClick={() => navigate('/')} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
           ← Home
@@ -25,14 +24,12 @@ function ReportViewer() {
         <button onClick={() => navigate(`/${site_name}/dashboard`)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
           ← Dashboard
         </button>
-        <button onClick={() => navigate(`/${site_name}/dashboard/reports/${category}`)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
+        <button onClick={() => navigate(`/${site_name}/dashboard/reports/${category}/dates`)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
           ← Dates
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        {category.toUpperCase()} Report — {date}
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">{category.toUpperCase()} Report — {date}</h1>
 
       {reports.length === 0 ? (
         <p className="text-center text-gray-600">No reports found for this date.</p>

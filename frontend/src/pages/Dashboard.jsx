@@ -4,33 +4,34 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { site_name } = useParams(); // Get selected site from URL
+  const { site_name } = useParams();
 
   const handleCategoryClick = (category) => {
-    navigate(`/${site_name}/dashboard/reports/${category.toLowerCase()}`);
+    navigate(`/${site_name}/dashboard/reports/${category.toLowerCase()}/dates`);
   };
 
-  const handleBackClick = () => {
-    navigate('/');
+  const handleUploadClick = () => {
+    if (site_name.toLowerCase() === 'admin') {
+      navigate(`/${site_name}/dashboard/upload`);
+    }
   };
+
+  const handleBackClick = () => navigate('/');
 
   const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-right">
+    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
       <button
         onClick={handleBackClick}
         className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
       >
         ← Back to Site Selection
       </button>
-      
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Report Portal Dashboard
-      </h1>
+
+      <h1 className="text-3xl font-bold mb-6 text-center">Report Portal Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-        {/* Reports Card */}
         {categories.map((cat) => (
           <div
             key={cat}
@@ -40,6 +41,15 @@ function Dashboard() {
             <h2 className="text-xl font-semibold">{cat}</h2>
           </div>
         ))}
+
+        {site_name.toLowerCase() === 'admin' && (
+          <div
+            onClick={handleUploadClick}
+            className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-yellow-200 transition duration-200"
+          >
+            <h2 className="text-xl font-semibold">Upload Report</h2>
+          </div>
+        )}
       </div>
     </div>
   );

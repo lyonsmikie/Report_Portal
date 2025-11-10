@@ -23,4 +23,4 @@ class Report(Base):
     category = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
-    date = Column(DateTime(timezone=True), server_default=func.now())
+    date = Column(DateTime, nullable=False)

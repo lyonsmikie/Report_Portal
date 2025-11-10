@@ -4,20 +4,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 function ReportDates() {
-  const { site_name, category } = useParams(); // site_name from URL
+  const { site_name, category } = useParams();
   const navigate = useNavigate();
 
   const [dates, setDates] = useState([]);
 
   useEffect(() => {
-    api.get(`/reports/${site_name}/${category}`)
-      .then(res => {
-        const uniqueDates = [
-          ...new Set(res.data.map(r => new Date(r.date).toISOString().split('T')[0]))
-        ];
-        setDates(uniqueDates);
-      })
-      .catch(err => console.error(err));
+    async function fetchDates() {
+      const res = await api.get(`/report-dates/${site_name}/${category}`);
+      setDates(res.data); // Only existing files
+    }
+    fetchDates();
   }, [site_name, category]);
 
   const handleDateClick = (date) => {
@@ -29,7 +26,6 @@ function ReportDates() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {/* Back Button */}
       <div className="flex justify-between mb-6">
         <button onClick={goHome} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
           ← Home
@@ -39,9 +35,7 @@ function ReportDates() {
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        {category.toUpperCase()} Reports
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">{category.toUpperCase()} Reports</h1>
 
       {dates.length === 0 ? (
         <p className="text-center text-gray-600">No reports found for this category.</p>
