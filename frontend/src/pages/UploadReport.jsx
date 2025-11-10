@@ -5,13 +5,15 @@ import api from '../api';
 
 function UploadReport() {
   const navigate = useNavigate();
-  const { site_name } = useParams();
+  const { site_name } = useParams(); 
 
   const [category, setCategory] = useState('MACD');
   const [file, setFile] = useState(null);
   const [reportDate, setReportDate] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showOptions, setShowOptions] = useState(false); // NEW
+  const [pendingUpload, setPendingUpload] = useState(null); // NEW
 
   const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
 
@@ -23,53 +25,67 @@ function UploadReport() {
     if (!reportDate) return alert("Please select a date.");
 
     setLoading(true);
-    setMessage('Uploading...');
+    setMessage('Checking for existing reports...');
 
     try {
-      // Step 1: Check if a report already exists
+      // Step 1: Check if report exists
       const existing = await api.get(`/reports/${site_name}/${category}/${reportDate}`);
-      let override = false;
-      let saveAsNew = false;
 
       if (existing.data.length > 0) {
-        const choice = window.prompt(
-          `A report already exists for ${category} on ${reportDate}.\n` +
-          `Type 'O' to Override, 'N' to Save as New, 'C' to Cancel`
-        );
-        if (!choice || choice.toUpperCase() === 'C') {
-          setMessage('Upload cancelled.');
-          setLoading(false);
-          return;
-        } else if (choice.toUpperCase() === 'O') {
-          override = true;
-        } else if (choice.toUpperCase() === 'N') {
-          saveAsNew = true;
-        }
+        // Show options instead of prompt
+        setPendingUpload({ file, category, reportDate });
+        setShowOptions(true);
+        setLoading(false);
+        return;
       }
 
-      // Step 2: Prepare form data
-      const formData = new FormData();
-      formData.append('site_name', site_name);
-      formData.append('category', category);
-      formData.append('date', reportDate);
-      formData.append('file', file);
-      formData.append('override', override); // send override flag to backend
-      formData.append('save_as_new', saveAsNew);
+      // No existing report → upload directly
+      await doUpload(file, category, reportDate, false);
+    } catch (err) {
+      console.error(err.response?.data || err);
+      setMessage(`Upload failed: ${err.response?.data?.detail || 'Unknown error'}`);
+      setLoading(false);
+    }
+  };
 
-      // Step 3: Upload
+  // Step 2: Perform upload
+  const doUpload = async (file, category, reportDate, override, saveAsNew = false) => {
+    const formData = new FormData();
+    formData.append('site_name', site_name);
+    formData.append('category', category);
+    formData.append('date', reportDate);
+    formData.append('file', file);
+    formData.append('override', override);
+    formData.append('save_as_new', saveAsNew); // NEW
+
+    setMessage('Uploading...');
+    try {
       const res = await api.post('/upload-report', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
       setMessage(`Uploaded: ${res.data.report.file_name}`);
       setFile(null);
-
+      setShowOptions(false);
+      setPendingUpload(null);
     } catch (err) {
       console.error(err.response?.data || err);
-      const detail = err.response?.data?.detail || 'Unknown error';
-      setMessage(`Upload failed: ${detail}`);
+      setMessage(`Upload failed: ${err.response?.data?.detail || 'Unknown error'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Step 3: Button handlers for existing file
+  const handleOption = (option) => {
+    if (!pendingUpload) return;
+    if (option === 'override') {
+      doUpload(pendingUpload.file, pendingUpload.category, pendingUpload.reportDate, true, false);
+    } else if (option === 'new') {
+      doUpload(pendingUpload.file, pendingUpload.category, pendingUpload.reportDate, false, true);
+    } else if (option === 'cancel') {
+      setShowOptions(false);
+      setPendingUpload(null);
+      setMessage('Upload cancelled');
     }
   };
 
@@ -117,7 +133,7 @@ function UploadReport() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || showOptions}
           className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
         >
           {loading ? 'Uploading...' : 'Upload'}
@@ -125,6 +141,31 @@ function UploadReport() {
 
         {message && <p className="mt-2 text-center text-gray-700">{message}</p>}
       </form>
+
+      {/* === Override / New / Cancel Options === */}
+      {showOptions && (
+        <div className="max-w-md mx-auto mt-4 p-4 bg-yellow-100 rounded shadow space-x-2 text-center">
+          <p className="mb-2 font-semibold">A report already exists for this category and date.</p>
+          <button
+            onClick={() => handleOption('override')}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Override
+          </button>
+          <button
+            onClick={() => handleOption('new')}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Save as New
+          </button>
+          <button
+            onClick={() => handleOption('cancel')}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }

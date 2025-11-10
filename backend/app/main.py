@@ -120,18 +120,19 @@ async def upload_report(
     category: str = Form(...),
     date: str = Form(None),
     override: bool = Form(False),
-    save_as_new: bool = Form(False),
+    save_as_new: bool = Form(False),  # NEW
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     try:
+        # Parse date or default to now
         report_date = datetime.strptime(date, "%Y-%m-%d") if date and date.strip() else datetime.now()
         report_date_str = report_date.strftime("%d%m%Y")
+
+        # File extension
         file_ext = file.filename.split('.')[-1]
 
-        base_filename = f"{category}_{report_date_str}.{file_ext}"
-        file_path = os.path.join(UPLOAD_FOLDER, base_filename)
-
+        # Check existing reports
         existing_reports = db.query(models.Report).filter(
             models.Report.site_name == site_name.lower(),
             models.Report.category == category.lower(),
@@ -140,43 +141,39 @@ async def upload_report(
 
         if existing_reports:
             if override:
-                # Delete existing files and DB entries
+                # Delete existing files + DB
                 for r in existing_reports:
                     existing_file_path = os.path.join(UPLOAD_FOLDER, r.file_name)
                     if os.path.exists(existing_file_path):
                         os.remove(existing_file_path)
                     db.delete(r)
                 db.commit()
-                # Use base filename for override
-                filename = base_filename
-                file_path = os.path.join(UPLOAD_FOLDER, filename)
-
+                filename = f"{category}_{report_date_str}.{file_ext}"
             elif save_as_new:
-                # Existing iterations
-                existing_numbers = [1]  # original file counts as iteration 1
-                for r in existing_reports:
-                    fname_base = r.file_name.rsplit('.', 1)[0]  # remove extension
-                    parts = fname_base.split('_')
-                    # If last part is numeric AND length <= 3 (to capture _2, _3 etc)
-                    if parts[-1].isdigit() and len(parts[-1]) <= 3:
-                        existing_numbers.append(int(parts[-1]))
-                next_num = max(existing_numbers) + 1
-                filename = f"{category}_{report_date_str}_{next_num}.{file_ext}"
-                file_path = os.path.join(UPLOAD_FOLDER, filename)
-
+                # Create a new filename with iteration _X
+                i = 2
+                while True:
+                    filename_candidate = f"{category}_{report_date_str}_{i}.{file_ext}"
+                    if not any(r.file_name == filename_candidate for r in existing_reports):
+                        filename = filename_candidate
+                        break
+                    i += 1
             else:
                 raise HTTPException(
                     status_code=400,
                     detail=f"A report for {category} on {report_date.strftime('%Y-%m-%d')} already exists. Set override or save_as_new."
                 )
         else:
-            filename = base_filename
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            # No existing report → normal filename
+            filename = f"{category}_{report_date_str}.{file_ext}"
 
-        # Save uploaded file
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+        # Save file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
+        # Save to DB
         new_report = models.Report(
             site_name=site_name.lower(),
             category=category.lower(),
@@ -204,6 +201,7 @@ async def upload_report(
     except Exception as e:
         print("Upload error:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # ============================================================
 # REPORT FILE ACCESS (DIRECT BY ID)
