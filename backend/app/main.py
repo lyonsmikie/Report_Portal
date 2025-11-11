@@ -3,9 +3,11 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from .database import SessionLocal, engine
-from . import models, crud, auth
+from . import models, crud, auth, database
 from datetime import datetime
 import shutil
 import os
@@ -33,16 +35,37 @@ def get_db():
     finally:
         db.close()
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 # ============================================================
 # AUTHENTICATION
 # ============================================================
+# AUTHENTICATION
 @app.post("/login")
-def login(email: str, password: str, db: Session = Depends(get_db)):
+def login(login_req: LoginRequest, db: Session = Depends(get_db)):
+    email = login_req.email
+    password = login_req.password
+    print("Received login attempt:", email)
+
     user = crud.get_user_by_email(db, email)
-    if not user or not auth.verify_password(password, user.hashed_password):
+    if not user:
+        print("Login failed: user not found for email:", email)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not auth.verify_password(password, user.hashed_password):
+        print("Login failed: password incorrect for email:", email)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
     token = auth.create_access_token({"sub": user.email, "site_name": user.site_name})
-    return {"access_token": token, "token_type": "bearer"}
+    print("Login successful for user:", email)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "allowed_sites": user.allowed_sites.split(",") if hasattr(user, 'allowed_sites') and user.allowed_sites else [user.site_name],
+    }
 
 # ============================================================
 # SITE MANAGEMENT

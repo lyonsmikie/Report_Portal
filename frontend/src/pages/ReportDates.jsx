@@ -41,15 +41,18 @@ function ReportDates() {
         <p className="text-center text-gray-600">No reports found for this category.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {dates.map(date => (
-            <div
-              key={date}
-              onClick={() => handleDateClick(date)}
-              className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:bg-green-100 transition duration-200"
-            >
-              <h2 className="text-xl font-semibold">{date}</h2>
-            </div>
-          ))}
+          {dates.map(date => {
+            const formattedDate = new Date(date).toLocaleDateString('en-GB'); // ✅ format as dd/mm/yyyy
+            return (
+              <div
+                key={date}
+                onClick={() => handleDateClick(date)}
+                className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:bg-green-100 transition duration-200"
+              >
+                <h2 className="text-xl font-semibold">{formattedDate}</h2>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
