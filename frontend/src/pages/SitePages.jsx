@@ -1,6 +1,7 @@
 // src/pages/SitePages.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderBar from "../components/HeaderBar";
 
 function SitePages() {
   const navigate = useNavigate();
@@ -40,6 +41,10 @@ function SitePages() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
+
+      {/* 🔥 NEW: Unified top bar with Logout only */}
+      <HeaderBar backLinks={[]} />
+
       <h1 className="text-3xl font-bold mb-6 text-center">Select a Site</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

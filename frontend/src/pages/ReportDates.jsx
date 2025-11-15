@@ -1,7 +1,8 @@
 // src/pages/ReportDates.jsx
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../api";
+import HeaderBar from "../components/HeaderBar";
 
 function ReportDates() {
   const { site_name, category } = useParams();
@@ -12,7 +13,7 @@ function ReportDates() {
   useEffect(() => {
     async function fetchDates() {
       const res = await api.get(`/report-dates/${site_name}/${category}`);
-      setDates(res.data); // Only existing files
+      setDates(res.data);
     }
     fetchDates();
   }, [site_name, category]);
@@ -21,28 +22,29 @@ function ReportDates() {
     navigate(`/${site_name}/dashboard/reports/${category}/${date}/view`);
   };
 
-  const goBackToDashboard = () => navigate(`/${site_name}/dashboard`);
-  const goHome = () => navigate('/');
-
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="flex justify-between mb-6">
-        <button onClick={goHome} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-          ← Home
-        </button>
-        <button onClick={goBackToDashboard} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-          ← Back to Dashboard
-        </button>
-      </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">{category.toUpperCase()} Reports</h1>
+      {/* 🔥 NEW: Standardized top bar */}
+      <HeaderBar
+        backLinks={[
+          { label: "Back to Site Selection", path: "/sites" },
+          { label: "Back to Dashboard", path: `/${site_name}/dashboard` }
+        ]}
+      />
+
+      <h1 className="text-3xl font-bold mt-6 mb-6 text-center">
+        {category.toUpperCase()} Reports
+      </h1>
 
       {dates.length === 0 ? (
-        <p className="text-center text-gray-600">No reports found for this category.</p>
+        <p className="text-center text-gray-600">
+          No reports found for this category.
+        </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {dates.map(date => {
-            const formattedDate = new Date(date).toLocaleDateString('en-GB'); // ✅ format as dd/mm/yyyy
+          {dates.map((date) => {
+            const formattedDate = new Date(date).toLocaleDateString("en-GB");
             return (
               <div
                 key={date}

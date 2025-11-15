@@ -94,8 +94,16 @@ def get_categories():
 # ============================================================
 @app.get("/reports")
 def get_reports(site_name: str, db: Session = Depends(get_db)):
-    """Fetch all reports for a given site."""
-    reports = crud.get_reports_by_site(db, site_name.lower())
+    """Fetch all reports for a given site, including admin reports."""
+    reports = (
+        db.query(models.Report)
+        .filter(
+            (models.Report.site_name.ilike(site_name.lower())) |
+            (models.Report.site_name.ilike("admin"))
+        )
+        .order_by(models.Report.date.desc())
+        .all()
+    )
     return reports
 
 # ============================================================
@@ -103,10 +111,19 @@ def get_reports(site_name: str, db: Session = Depends(get_db)):
 # ============================================================
 @app.get("/reports/{site_name}/{category}")
 def get_reports_by_category(site_name: str, category: str, db: Session = Depends(get_db)):
-    """Fetch all reports by site and category."""
-    reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
-    if not reports:
-        return []
+    """Fetch all reports by site + category, including admin/global."""
+    reports = (
+        db.query(models.Report)
+        .filter(
+            (
+                models.Report.site_name.ilike(site_name.lower()) |
+                models.Report.site_name.ilike("admin")
+            ),
+            models.Report.category.ilike(category.lower())
+        )
+        .order_by(models.Report.date.desc())
+        .all()
+    )
     return reports
 
 # ============================================================
@@ -114,7 +131,7 @@ def get_reports_by_category(site_name: str, category: str, db: Session = Depends
 # ============================================================
 @app.get("/reports/{site_name}/{category}/{date}")
 def get_reports_by_date(site_name: str, category: str, date: str, db: Session = Depends(get_db)):
-    """Fetch all reports by site, category, and date."""
+    """Fetch all reports by site, category, and date, including admin/global."""
     try:
         parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
     except ValueError:
@@ -123,7 +140,21 @@ def get_reports_by_date(site_name: str, category: str, date: str, db: Session = 
     start = datetime.combine(parsed_date, datetime.min.time())
     end = datetime.combine(parsed_date, datetime.max.time())
 
-    reports = crud.get_reports_by_date(db, site_name.lower(), category.lower(), start, end)
+    reports = (
+        db.query(models.Report)
+        .filter(
+            (
+                models.Report.site_name.ilike(site_name.lower()) |
+                models.Report.site_name.ilike("admin")
+            ),
+            models.Report.category.ilike(category.lower()),
+            models.Report.date >= start,
+            models.Report.date <= end,
+        )
+        .order_by(models.Report.date.desc())
+        .all()
+    )
+
     return reports
 
 # ============================================================
@@ -247,24 +278,36 @@ def get_report_file(report_id: int, db: Session = Depends(get_db)):
 # ============================================================
 @app.get("/report-dates/{site_name}/{category}")
 def get_report_dates(site_name: str, category: str, db: Session = Depends(get_db)):
-    """Return all unique report dates for a given site and category."""
-    reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
+    """Return all unique report dates for a given site and category, including admin/global."""
+    
+    reports = (
+        db.query(models.Report)
+        .filter(
+            (
+                models.Report.site_name.ilike(site_name.lower()) |
+                models.Report.site_name.ilike("admin")
+            ),
+            models.Report.category.ilike(category.lower())
+        )
+        .all()
+    )
 
-    # Filter reports: remove DB entries for files that are missing
-    existing_reports = []
+    # Remove DB entries for missing files
+    cleaned = []
     for r in reports:
         file_path = os.path.join(UPLOAD_FOLDER, r.file_name)
-        if not os.path.exists(file_path):
+        if os.path.exists(file_path):
+            cleaned.append(r)
+        else:
             db.delete(r)
     db.commit()
 
-    # Re-fetch reports after deletion
-    # Re-fetch reports after deletion
-    reports = crud.get_reports_by_category(db, site_name.lower(), category.lower())
+    # Rebuild unique date list
     unique_dates = sorted(
-        list({r.date.strftime("%Y-%m-%d") for r in reports}),
-        reverse=True,
+        {r.date.strftime("%Y-%m-%d") for r in cleaned},
+        reverse=True
     )
+
     return unique_dates
 
 # ============================================================

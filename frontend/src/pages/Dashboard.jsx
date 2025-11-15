@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import HeaderBar from "../components/HeaderBar";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -11,25 +12,26 @@ function Dashboard() {
   };
 
   const handleUploadClick = () => {
-    if (site_name.toLowerCase() === 'admin') {
+    if (site_name.toLowerCase() === "admin") {
       navigate(`/${site_name}/dashboard/upload`);
     }
   };
 
-  const handleBackClick = () => navigate('/');
-
-  const categories = ['MACD', 'RSI', 'Stochastic', 'Other1', 'Other2'];
+  const categories = ["MACD", "RSI", "Stochastic", "Other1", "Other2"];
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
-      <button
-        onClick={handleBackClick}
-        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-      >
-        ← Back to Site Selection
-      </button>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">Report Portal Dashboard</h1>
+      {/* 🔥 NEW: HeaderBar with back button & logout */}
+      <HeaderBar
+        backLinks={[
+          { label: "Back to Site Selection", path: "/sites" }
+        ]}
+      />
+
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Report Portal Dashboard
+      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {categories.map((cat) => (
@@ -42,7 +44,7 @@ function Dashboard() {
           </div>
         ))}
 
-        {site_name.toLowerCase() === 'admin' && (
+        {site_name.toLowerCase() === "admin" && (
           <div
             onClick={handleUploadClick}
             className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-yellow-200 transition duration-200"

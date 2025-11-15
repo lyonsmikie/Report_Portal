@@ -1,7 +1,8 @@
 // src/pages/ReportViewer.jsx
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import api, { deleteReport } from '../api';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api, { deleteReport } from "../api";
+import HeaderBar from "../components/HeaderBar";
 
 function ReportViewer() {
   const { site_name, category, date } = useParams();
@@ -10,17 +11,18 @@ function ReportViewer() {
   const [reports, setReports] = useState([]);
 
   useEffect(() => {
-    api.get(`/reports/${site_name}/${category}/${date}`)
-      .then(res => setReports(res.data))
-      .catch(err => console.error(err));
+    api
+      .get(`/reports/${site_name}/${category}/${date}`)
+      .then((res) => setReports(res.data))
+      .catch((err) => console.error(err));
   }, [site_name, category, date]);
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this report?')) {
+    if (window.confirm("Are you sure you want to delete this report?")) {
       try {
         await deleteReport(id);
         setReports((prev) => prev.filter((r) => r.id !== id));
-        alert('Report deleted successfully.');
+        alert("Report deleted successfully.");
       } catch (err) {
         alert(`Failed to delete report: ${err.message}`);
       }
@@ -29,31 +31,27 @@ function ReportViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {/* Navigation buttons */}
-      <div className="flex justify-between mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-          ← Home
-        </button>
-        <button
-          onClick={() => navigate(`/${site_name}/dashboard`)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-          ← Dashboard
-        </button>
-        <button
-          onClick={() => navigate(`/${site_name}/dashboard/reports/${category}/dates`)}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">
-          ← Dates
-        </button>
-      </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">
+      {/* 🔥 NEW unified navigation + logout bar */}
+      <HeaderBar
+        backLinks={[
+          { label: "Back to Site Selection", path: "/sites" },
+          { label: "Back to Dashboard", path: `/${site_name}/dashboard` },
+          {
+            label: "Back to Dates",
+            path: `/${site_name}/dashboard/reports/${category}/dates`,
+          },
+        ]}
+      />
+
+      <h1 className="text-3xl font-bold mt-6 mb-6 text-center">
         {category.toUpperCase()} Report — {date}
       </h1>
 
       {reports.length === 0 ? (
-        <p className="text-center text-gray-600">No reports found for this date.</p>
+        <p className="text-center text-gray-600">
+          No reports found for this date.
+        </p>
       ) : (
         <div className="max-w-4xl mx-auto space-y-4">
           {reports.map((report) => (
@@ -66,7 +64,8 @@ function ReportViewer() {
                   <strong>File Name:</strong> {report.file_name}
                 </p>
 
-                {report.file_type === 'pdf' ? (
+                {/* PDF Viewer or Download link */}
+                {report.file_type === "pdf" ? (
                   <iframe
                     src={`http://localhost:8000/uploaded_reports/${report.file_name}`}
                     width="100%"
