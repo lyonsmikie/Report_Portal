@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import Body
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from .database import SessionLocal, engine
 from . import models, crud, auth, database
@@ -39,6 +39,10 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class CreateUserRequest(BaseModel):
+    email: EmailStr
+    password: str
+
 # ============================================================
 # AUTHENTICATION
 # ============================================================
@@ -64,7 +68,51 @@ def login(login_req: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": token,
         "token_type": "bearer",
-        "allowed_sites": user.allowed_sites.split(",") if hasattr(user, 'allowed_sites') and user.allowed_sites else [user.site_name],
+        # "allowed_sites": user.allowed_sites.split(",") if hasattr(user, 'allowed_sites') and user.allowed_sites else [user.site_name],
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "site_name": user.site_name,
+            "allowed_sites": user.allowed_sites
+        }
+    }
+
+# ============================================================
+# CREATE ACCOUNT
+# ============================================================
+@app.post("/create-account")
+def create_account(req: CreateUserRequest, db: Session = Depends(get_db)):
+    print("Incoming create-account payload:", req)
+
+    # Check if email exists
+    existing_user = crud.get_user_by_email(db, req.email)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    # Create new user
+    hashed_password = auth.get_password_hash(req.password)
+    new_user = models.User(
+        email=req.email,
+        hashed_password=hashed_password,
+        site_name=getattr(req, "site_name", "shared"),
+        allowed_sites=getattr(req, "allowed_sites", "shared")
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # AUTO-LOGIN AFTER CREATION (critical fix)
+    token = auth.create_access_token({
+        "sub": new_user.email,
+        "site_name": new_user.site_name
+    })
+
+    return {
+        "message": f"User {req.email} created successfully",
+        "access_token": token,
+        "token_type": "bearer",
+        "allowed_sites": new_user.allowed_sites.split(",")
     }
 
 # ============================================================

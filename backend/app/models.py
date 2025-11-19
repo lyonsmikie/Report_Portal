@@ -14,7 +14,11 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    site_name = Column(String, nullable=False)  
+    # Main assigned site (personal / shared / admin)
+    site_name = Column(String, nullable=False)
+
+    # NEW — comma-separated list of allowed sites
+    allowed_sites = Column(String, default="shared", nullable=False) 
 
 class Report(Base):
     __tablename__ = "reports"
