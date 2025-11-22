@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from .database import SessionLocal, engine
 from . import models, crud, auth, database
+from .auth import get_current_user
 from datetime import datetime
 import shutil
 import os
@@ -362,7 +363,11 @@ def get_report_dates(site_name: str, category: str, db: Session = Depends(get_db
 # DELETED REPORTS
 # ============================================================
 @app.delete("/delete-report/{report_id}")
-def delete_report(report_id: int, db: Session = Depends(get_db)):
+def delete_report(report_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    # Only admins allowed
+    if user.site_name != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete reports")
+    
     report = db.query(models.Report).filter(models.Report.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")

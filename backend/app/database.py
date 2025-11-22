@@ -15,6 +15,13 @@ engine = create_engine(
 # SessionLocal class used to create DB sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # Base class for models
 Base = declarative_base()
 

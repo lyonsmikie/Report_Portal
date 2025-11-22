@@ -85,12 +85,14 @@ function ReportViewer() {
                 )}
               </div>
 
-              <button
-                onClick={() => handleDelete(report.id)}
-                className="ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-              >
-                Delete
-              </button>
+              {site_name === "admin" && (
+                <button
+                  onClick={() => handleDelete(report.id)}
+                  className="ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           ))}
         </div>
