@@ -2,11 +2,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from .database import Base
 
-# class Site(Base):
-#     __tablename__ = "sites"
-#     id = Column(Integer, primary_key=True, index=True)
-#     name = Column(String, unique=True, index=True)
-#     users = relationship("User", back_populates="site")
 
 class User(Base):
     __tablename__ = "users"

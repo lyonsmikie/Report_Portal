@@ -1,15 +1,21 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+from dotenv import load_dotenv
 
-# PostgreSQL connection URL
-SQLALCHEMY_DATABASE_URL = "postgresql://admin:admin@localhost:5432/report_db"
+# load .env if present
+load_dotenv()
 
+# PostgreSQL connection URL (override with DATABASE_URL env var)
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://admin:admin@localhost:5432/report_db"
+)
 
 # Create the engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    echo=True  # set to False in production
+    echo=os.getenv("SQL_ECHO", "true").lower() == "true"  # set to False in production
 )
 
 # SessionLocal class used to create DB sessions

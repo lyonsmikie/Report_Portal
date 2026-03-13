@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+passlib[bcrypt]
+PyJWT
+python-multipart
+pydantic
+python-dotenv  # for loading .env variables

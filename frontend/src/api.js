@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // FastAPI backend
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000', // FastAPI backend
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,8 +20,9 @@ export default api;
 
 export async function deleteReport(reportId) {
   const token = localStorage.getItem("token");
+  const base = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const response = await fetch(`http://127.0.0.1:8000/delete-report/${reportId}`, {
+  const response = await fetch(`${base}/delete-report/${reportId}`, {
     method: 'DELETE',
     headers: {
       "Authorization": `Bearer ${token}`,

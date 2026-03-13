@@ -48,8 +48,17 @@ function LoginPage() {
     try {
       const res = await api.post('/create-account', { email, password });
       alert(res.data.message);
+
+      // store token and allowed sites
+      const { access_token, allowed_sites } = res.data;
+      if (access_token) {
+        const sites = allowed_sites || ["shared"];
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('allowed_sites', JSON.stringify(sites));
+        navigate('/sites');
+      }
   
-      // Auto-switch to login
+      // cleanup
       setIsCreating(false);
       setEmail(''); 
       setPassword('');

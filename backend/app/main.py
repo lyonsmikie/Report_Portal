@@ -13,6 +13,10 @@ from datetime import datetime
 import shutil
 import os
 import uuid
+from dotenv import load_dotenv
+
+# load .env variables if present
+load_dotenv()
 
 # --- Create database tables ---
 models.Base.metadata.create_all(bind=engine)
@@ -20,9 +24,11 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Report Portal API")
 
 # --- CORS ---
+# allow_origins can be a comma-separated list in the ALLOW_ORIGINS env var
+origins = os.getenv("ALLOW_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # frontend origin
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,9 +46,13 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+from typing import List, Optional
+
 class CreateUserRequest(BaseModel):
     email: EmailStr
     password: str
+    site_name: Optional[str] = "shared"
+    allowed_sites: Optional[List[str]] = None
 
 # ============================================================
 # AUTHENTICATION
@@ -69,11 +79,11 @@ def login(login_req: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": token,
         "token_type": "bearer",
-        # "allowed_sites": user.allowed_sites.split(",") if hasattr(user, 'allowed_sites') and user.allowed_sites else [user.site_name],
         "user": {
             "id": user.id,
             "email": user.email,
             "site_name": user.site_name,
+            # send as comma-string to mimic create-account payload
             "allowed_sites": user.allowed_sites
         }
     }
@@ -92,11 +102,12 @@ def create_account(req: CreateUserRequest, db: Session = Depends(get_db)):
 
     # Create new user
     hashed_password = auth.get_password_hash(req.password)
+    allowed = req.allowed_sites or [req.site_name]
     new_user = models.User(
         email=req.email,
         hashed_password=hashed_password,
-        site_name=getattr(req, "site_name", "shared"),
-        allowed_sites=getattr(req, "allowed_sites", "shared")
+        site_name=req.site_name or "shared",
+        allowed_sites=",".join(allowed)
     )
 
     db.add(new_user)

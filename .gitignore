@@ -1,0 +1,17 @@
+# Root gitignore for project
+
+# Python artifacts
+/backend/venv/
+/backend/__pycache__/
+/backend/*.pyc
+/backend/.env
+
+# uploaded reports should not be committed
+/backend/uploaded_reports/
+
+# Node modules and build artifacts (frontend has its own ignore but include here too)
+/frontend/node_modules/
+/frontend/build/
+
+# OS
+.DS_Store
