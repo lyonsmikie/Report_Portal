@@ -6,10 +6,13 @@ from dotenv import load_dotenv
 # load .env if present
 load_dotenv()
 
-# PostgreSQL connection URL (override with DATABASE_URL env var)
+# Database connection URL (override with DATABASE_URL env var).
+# If none is provided we fall back to a local SQLite file so the project
+# can run standalone without requiring Postgres.
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://admin:admin@localhost:5432/report_db"
+    # default to sqlite in repo root
+    "sqlite:///" + os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "report_db.sqlite"))
 )
 
 # Create the engine
