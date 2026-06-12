@@ -2,7 +2,46 @@
 
 This project consists of a **FastAPI backend** and a **React frontend** for uploading and viewing reports by category, date and site (personal/shared/admin).
 
-## Backend Setup
+📋 **For detailed technical specifications and architecture, see [SPECIFICATION.md](./SPECIFICATION.md)** — this document contains complete implementation details, database schemas, API endpoints, and deployment information suitable for recreating or extending the application.
+
+## ⚡ Quick Start (One Command)
+
+After [initial setup](#backend-setup) is complete, you can start both servers with a single command:
+
+**Windows (PowerShell):**
+```powershell
+.\run.ps1
+```
+
+**Windows (Command Prompt / CMD):**
+Double-click `run.bat` in the file explorer, OR from CMD/PowerShell run:
+```cmd
+.\run.bat
+```
+
+**Mac/Linux:**
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+This will open two new terminal windows—one for the backend, one for the frontend. The React app will automatically open at `http://localhost:3000`.
+
+---
+
+### Running the test suite
+
+A small collection of unit/integration tests is provided under `backend/tests`.
+To execute them install the requirements (including `pytest`), then run from
+`backend/`:
+
+```bash
+venv\Scripts\activate   # or your virtualenv of choice
+pytest
+```
+
+The tests use an in‑memory SQLite database and do not touch your real data.
+
 
 1. **Install requirements**:
    ```bash
@@ -14,14 +53,22 @@ This project consists of a **FastAPI backend** and a **React frontend** for uplo
 
 2. **Database**
 
-   - Install PostgreSQL.
-   - Create database & user:
-     ```sql
-     CREATE DATABASE report_db;
-     CREATE USER admin WITH PASSWORD 'admin';
-     GRANT ALL PRIVILEGES ON DATABASE report_db TO admin;
-     ```
-   - Alternatively set `DATABASE_URL` env var to a different connection string.
+   The code will use whatever URL is in `DATABASE_URL`.  By default it
+   falls back to a local SQLite file (`report_db.sqlite`) in the repository,
+   so you don’t _need_ to install PostgreSQL for a quick standalone release.
+
+   If you prefer Postgres (or another engine) set `DATABASE_URL` to something
+   like:
+   ```env
+   DATABASE_URL=postgresql://admin:admin@localhost:5432/report_db
+   ```
+
+   To prepare Postgres manually:
+   ```sql
+   CREATE DATABASE report_db;
+   CREATE USER admin WITH PASSWORD 'admin';
+   GRANT ALL PRIVILEGES ON DATABASE report_db TO admin;
+   ```
 
 3. **Configure environment variables**
    A `.env` file in the `backend` folder holds configuration that is loaded by `python-dotenv` at startup.  You can simply copy `backend/.env.example` into `.env` and then edit the settings.  At a minimum you need:
@@ -63,8 +110,10 @@ This project consists of a **FastAPI backend** and a **React frontend** for uplo
 
 ## Usage
 
-1. Navigate to `http://localhost:3000` and create an account or login with the admin account.
+1. Navigate to `http://localhost:3000` and create an account or login with the admin account.  Accounts created through the UI are saved in the database (SQLite by default), so they will persist across restarts.
 2. Select a site, view reports by category/date, and upload/delete if you have admin privileges.
+
+*If you use PostgreSQL the same data persistence applies; simply point `DATABASE_URL` at your PG instance.*
 
 ## Notes
 
@@ -75,3 +124,10 @@ This project consists of a **FastAPI backend** and a **React frontend** for uplo
 ---
 
 This README was generated to help get the portal running; adjust as needed for your environment.
+
+# List of test users
+test_users = [
+    {"email": "personal@test.com", "password": "personal123", "site_name": "personal", "allowed_sites": "personal"},
+    {"email": "shared@test.com", "password": "shared123", "site_name": "shared", "allowed_sites": "shared"},
+    {"email": "admin@test.com", "password": "admin123", "site_name": "admin", "allowed_sites": "admin"},
+]
