@@ -33,12 +33,12 @@ function Dashboard() {
         Report Portal Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div className="flex flex-wrap justify-center items-stretch gap-6 max-w-4xl mx-auto">
         {categories.map((cat) => (
           <div
             key={cat}
             onClick={() => handleCategoryClick(cat)}
-            className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-gray-200 transition duration-200"
+            className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-gray-200 transition duration-200 w-64 h-28 flex items-center justify-center"
           >
             <h2 className="text-xl font-semibold">{cat}</h2>
           </div>
@@ -47,7 +47,7 @@ function Dashboard() {
         {site_name.toLowerCase() === "admin" && (
           <div
             onClick={handleUploadClick}
-            className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-yellow-200 transition duration-200"
+            className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-yellow-200 transition duration-200 w-64 h-28 flex items-center justify-center"
           >
             <h2 className="text-xl font-semibold">Upload Report</h2>
           </div>

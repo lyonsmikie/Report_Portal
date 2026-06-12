@@ -42,14 +42,14 @@ function ReportDates() {
           No reports found for this category.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="flex flex-wrap justify-center items-stretch gap-6 max-w-4xl mx-auto">
           {dates.map((date) => {
             const formattedDate = new Date(date).toLocaleDateString("en-GB");
             return (
               <div
                 key={date}
                 onClick={() => handleDateClick(date)}
-                className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:bg-green-100 transition duration-200"
+                className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:bg-green-100 transition duration-200 w-64 h-28 flex items-center justify-center"
               >
                 <h2 className="text-xl font-semibold">{formattedDate}</h2>
               </div>

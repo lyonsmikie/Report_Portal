@@ -47,20 +47,20 @@ function SitePages() {
 
       <h1 className="text-3xl font-bold mb-6 text-center">Select a Site</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="flex flex-wrap justify-center items-stretch gap-6 max-w-4xl w-full">
         {visibleSites.length > 0 ? (
           visibleSites.map((site) => (
             <div
               key={site.key}
               onClick={() => handleSelectSite(site.key)}
-              className={`bg-white shadow-md rounded-2xl p-8 text-center cursor-pointer ${site.color} transition duration-200`}
+              className={`bg-white shadow-md rounded-2xl p-8 text-center cursor-pointer ${site.color} transition duration-200 w-80 h-40 flex flex-col justify-center items-center`}
             >
               <h2 className="text-2xl font-semibold mb-2">{site.title}</h2>
               <p>{site.description}</p>
             </div>
           ))
         ) : (
-          <p className="text-gray-600 text-center col-span-3">
+          <p className="text-gray-600 text-center w-full">
             No sites available for this account.
           </p>
         )}

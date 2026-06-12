@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import ReportDates from "./pages/ReportDates";
 import ReportViewer from "./pages/ReportViewer";
 import UploadReport from "./pages/UploadReport";
+import Documentation from "./pages/Documentation";
 
 function App() {
   return (
@@ -17,6 +18,9 @@ function App() {
 
         {/* 🌐 Site Selection Page (after login) */}
         <Route path="/sites" element={<SitePages />} />
+
+        {/* 📖 Documentation */}
+        <Route path="/documentation" element={<Documentation />} />
 
         {/* 🏠 Dashboard for Personal / Shared / Admin */}
         <Route path="/:site_name/dashboard" element={<Dashboard />} />
