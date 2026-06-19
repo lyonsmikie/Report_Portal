@@ -15,7 +15,7 @@ function HeaderBar({ backLinks = [], showLogout = true, showDocumentation = true
   };
 
   return (
-    <div className="w-full flex justify-between items-center px-6 py-4 bg-white shadow-md mb-6">
+    <div className="w-full flex justify-between items-center px-6 py-4 bg-blue-500 shadow-md mb-6">
 
       {/* LEFT SIDE: BACK BUTTONS */}
       <div className="flex gap-3">
@@ -29,7 +29,7 @@ function HeaderBar({ backLinks = [], showLogout = true, showDocumentation = true
                 navigate(link.path);
               }
             }}
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition"
+            className="text-white px-3 py-2 hover:underline transition"
           >
             {link.label}
           </button>
@@ -41,7 +41,7 @@ function HeaderBar({ backLinks = [], showLogout = true, showDocumentation = true
         {showLogout && showDocumentation && (
           <button
             onClick={handleDocumentation}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="text-white px-3 py-2 hover:underline transition"
           >
             Documentation
           </button>
@@ -49,7 +49,7 @@ function HeaderBar({ backLinks = [], showLogout = true, showDocumentation = true
         {showLogout && (
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+            className="text-white px-3 py-2 hover:underline transition"
           >
             Logout
           </button>

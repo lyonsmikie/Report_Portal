@@ -41,3 +41,29 @@ export async function deleteReport(reportId) {
 
   return response.json();
 }
+
+export async function changeReportVisibility(reportId, visibility) {
+  const token = localStorage.getItem("token");
+  const base = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+  const response = await fetch(`${base}/report/${reportId}/visibility`, {
+    method: 'PATCH',
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ visibility })
+  });
+
+  if (!response.ok) {
+    let error;
+    try {
+      error = await response.json();
+    } catch {
+      throw new Error("Failed to change report visibility");
+    }
+    throw new Error(error.detail || "Failed to change report visibility");
+  }
+
+  return response.json();
+}

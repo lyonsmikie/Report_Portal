@@ -6,8 +6,11 @@ function Documentation() {
     <div className="min-h-screen bg-gray-100 p-6">
       <HeaderBar backLinks={[{ label: "← Back", path: "back" }]} showDocumentation={false} />
       
+      <div className="w-full bg-gray-200 py-4 mb-6">
+        <h1 className="text-3xl font-bold text-center">Documentation</h1>
+      </div>
+
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-4xl font-bold mb-6">Documentation</h1>
         
         <div className="prose prose-sm max-w-none space-y-8">
           {/* MACD Section */}

@@ -13,6 +13,7 @@ function UploadReport() {
   const [reportDate, setReportDate] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [visibility, setVisibility] = useState("shared");
 
   const [showOptions, setShowOptions] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
@@ -60,6 +61,7 @@ function UploadReport() {
     formData.append("file", file);
     formData.append("override", override);
     formData.append("save_as_new", saveAsNew);
+    formData.append("visibility", visibility);
 
     setMessage("Uploading...");
 
@@ -155,6 +157,18 @@ function UploadReport() {
         <div>
           <label className="block mb-1 font-semibold">Select File</label>
           <input type="file" onChange={handleFileChange} className="w-full" />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold">Visibility Tag</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
+          >
+            <option value="shared">Shared (visible to shared/personal/admin)</option>
+            <option value="personal">Personal (visible to personal/admin)</option>
+          </select>
         </div>
 
         <button

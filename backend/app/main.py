@@ -18,14 +18,44 @@ from dotenv import load_dotenv
 # load .env variables if present
 load_dotenv()
 
-# --- Create database tables ---
-models.Base.metadata.create_all(bind=engine)
+# --- Debug: print key startup configuration ---
+print("Report Portal starting up...")
+print("DATABASE_URL:", os.getenv("DATABASE_URL"))
+print("ALLOW_ORIGINS:", os.getenv("ALLOW_ORIGINS"))
+
+# --- Create database tables (guarded) ---
+try:
+    models.Base.metadata.create_all(bind=engine)
+    print("Database tables ensured (create_all completed)")
+except Exception as e:
+    print("Error creating database tables:", e)
+    raise
+
+# --- Ensure visibility column exists (backward compatibility) ---
+from sqlalchemy import inspect, String, text
+try:
+    inspector = inspect(engine)
+    if "reports" in inspector.get_table_names():
+        columns = [c["name"] for c in inspector.get_columns("reports")]
+        if "visibility" not in columns:
+            print("Adding missing 'visibility' column to 'reports' table...")
+            with engine.connect() as conn:
+                # Add the column with default value 'shared'
+                if "sqlite" in engine.url.drivername.lower():
+                    conn.execute(text("ALTER TABLE reports ADD COLUMN visibility TEXT DEFAULT 'shared'"))
+                else:  # PostgreSQL
+                    conn.execute(text("ALTER TABLE reports ADD COLUMN visibility VARCHAR DEFAULT 'shared'"))
+                conn.commit()
+            print("Column 'visibility' added successfully")
+except Exception as e:
+    print("Warning: Could not add visibility column:", e)
+    # Don't crash on this—the column might already exist or DB might be read-only
 
 app = FastAPI(title="Report Portal API")
 
 # --- CORS ---
 # allow_origins can be a comma-separated list in the ALLOW_ORIGINS env var
-origins = os.getenv("ALLOW_ORIGINS", "http://localhost:3000").split(",")
+origins = os.getenv("ALLOW_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -138,6 +168,30 @@ def get_sites():
         {"name": "shared"},
     ]
 
+
+# ============================================================
+# CHANGE REPORT VISIBILITY (ADMIN ONLY)
+# ============================================================
+@app.patch("/report/{report_id}/visibility")
+def change_report_visibility(report_id: int, payload: dict = Body(...), db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    if user.site_name != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can change report visibility")
+
+    visibility = (payload.get("visibility") or "").lower()
+    if visibility not in ["shared", "personal"]:
+        raise HTTPException(status_code=400, detail="visibility must be 'shared' or 'personal'")
+
+    report = db.query(models.Report).filter(models.Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report.visibility = visibility
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+
+    return {"message": "Visibility updated", "report": {"id": report.id, "visibility": report.visibility}}
+
 # ============================================================
 # REPORTS: CATEGORY + DATE HANDLERS
 # ============================================================
@@ -153,8 +207,8 @@ def get_categories():
 # FETCH REPORTS BY SITE NAME
 # ============================================================
 @app.get("/reports")
-def get_reports(site_name: str, db: Session = Depends(get_db)):
-    """Fetch all reports for a given site, including admin reports."""
+def get_reports(site_name: str, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    """Fetch all reports for a given site, including admin reports, filtered by visibility tags and current user."""
     reports = (
         db.query(models.Report)
         .filter(
@@ -164,14 +218,26 @@ def get_reports(site_name: str, db: Session = Depends(get_db)):
         .order_by(models.Report.date.desc())
         .all()
     )
-    return reports
+
+    # Apply visibility filtering in Python for clarity
+    allowed_sites = (user.allowed_sites or "").split(',')
+
+    def visible_to_user(r):
+        vis = (r.visibility or "shared").lower()
+        if vis == "shared":
+            return True
+        if vis == "personal":
+            return user.site_name == "admin" or user.site_name == "personal" or ("personal" in allowed_sites)
+        return False
+
+    return [r for r in reports if visible_to_user(r)]
 
 # ============================================================
 # FETCH REPORTS BY CATEGORY (site_name + category)
 # ============================================================
 @app.get("/reports/{site_name}/{category}")
-def get_reports_by_category(site_name: str, category: str, db: Session = Depends(get_db)):
-    """Fetch all reports by site + category, including admin/global."""
+def get_reports_by_category(site_name: str, category: str, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    """Fetch all reports by site + category, including admin/global, filtered by visibility."""
     reports = (
         db.query(models.Report)
         .filter(
@@ -184,13 +250,24 @@ def get_reports_by_category(site_name: str, category: str, db: Session = Depends
         .order_by(models.Report.date.desc())
         .all()
     )
-    return reports
+
+    allowed_sites = (user.allowed_sites or "").split(',')
+
+    def visible_to_user(r):
+        vis = (r.visibility or "shared").lower()
+        if vis == "shared":
+            return True
+        if vis == "personal":
+            return user.site_name == "admin" or user.site_name == "personal" or ("personal" in allowed_sites)
+        return False
+
+    return [r for r in reports if visible_to_user(r)]
 
 # ============================================================
 # FETCH REPORTS BY DATE (site_name + category + date)
 # ============================================================
 @app.get("/reports/{site_name}/{category}/{date}")
-def get_reports_by_date(site_name: str, category: str, date: str, db: Session = Depends(get_db)):
+def get_reports_by_date(site_name: str, category: str, date: str, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     """Fetch all reports by site, category, and date, including admin/global."""
     try:
         parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
@@ -215,7 +292,17 @@ def get_reports_by_date(site_name: str, category: str, date: str, db: Session = 
         .all()
     )
 
-    return reports
+    allowed_sites = (user.allowed_sites or "").split(',')
+
+    def visible_to_user(r):
+        vis = (r.visibility or "shared").lower()
+        if vis == "shared":
+            return True
+        if vis == "personal":
+            return user.site_name == "admin" or user.site_name == "personal" or ("personal" in allowed_sites)
+        return False
+
+    return [r for r in reports if visible_to_user(r)]
 
 # ============================================================
 # FILE UPLOAD
@@ -235,6 +322,7 @@ async def upload_report(
     date: str = Form(None),
     override: bool = Form(False),
     save_as_new: bool = Form(False),  # NEW
+    visibility: str = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -288,12 +376,16 @@ async def upload_report(
             shutil.copyfileobj(file.file, buffer)
 
         # Save to DB
+        # visibility can be provided by the uploader; default to 'shared'
+        visibility = visibility.lower() if visibility else "shared"
+
         new_report = models.Report(
             site_name=site_name.lower(),
             category=category.lower(),
             file_name=filename,
             file_type=file_ext,
-            date=report_date
+            date=report_date,
+            visibility=visibility
         )
         db.add(new_report)
         db.commit()
@@ -306,7 +398,8 @@ async def upload_report(
                 "file_name": filename,
                 "site_name": new_report.site_name,
                 "category": new_report.category,
-                "date": new_report.date.strftime("%Y-%m-%d")
+                    "date": new_report.date.strftime("%Y-%m-%d"),
+                    "visibility": new_report.visibility
             }
         }
 

@@ -1,7 +1,7 @@
 // src/pages/ReportViewer.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api, { deleteReport } from "../api";
+import api, { deleteReport, changeReportVisibility } from "../api";
 import HeaderBar from "../components/HeaderBar";
 
 function ReportViewer() {
@@ -64,6 +64,10 @@ function ReportViewer() {
                   <strong>File Name:</strong> {report.file_name}
                 </p>
 
+                <p className="mb-2">
+                  <strong>Visibility:</strong> {report.visibility || 'shared'}
+                </p>
+
                 {/* PDF Viewer or Download link */}
                 {report.file_type === "pdf" ? (
                   <iframe
@@ -86,12 +90,32 @@ function ReportViewer() {
               </div>
 
               {site_name === "admin" && (
-                <button
-                  onClick={() => handleDelete(report.id)}
-                  className="ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-                >
-                  Delete
-                </button>
+                <div className="flex flex-col ml-4 gap-2">
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                  >
+                    Delete
+                  </button>
+
+                  <select
+                    value={report.visibility || 'shared'}
+                    onChange={async (e) => {
+                      const newVis = e.target.value;
+                      try {
+                        await changeReportVisibility(report.id, newVis);
+                        setReports((prev) => prev.map(r => r.id === report.id ? {...r, visibility: newVis} : r));
+                        alert('Visibility updated');
+                      } catch (err) {
+                        alert(`Failed to update visibility: ${err.message}`);
+                      }
+                    }}
+                    className="border px-2 py-1 rounded"
+                  >
+                    <option value="shared">shared</option>
+                    <option value="personal">personal</option>
+                  </select>
+                </div>
               )}
             </div>
           ))}

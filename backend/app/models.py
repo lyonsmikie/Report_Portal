@@ -23,3 +23,5 @@ class Report(Base):
     file_name = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
+    # Visibility tag: 'shared' (visible to shared/personal/admin) or 'personal' (visible to personal/admin)
+    visibility = Column(String, default="shared", nullable=False)

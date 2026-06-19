@@ -33,9 +33,9 @@ function ReportDates() {
         ]}
       />
 
-      <h1 className="text-3xl font-bold mt-6 mb-6 text-center">
-        {category.toUpperCase()} Reports
-      </h1>
+      <div className="w-full bg-gray-200 py-4 mb-6">
+        <h1 className="text-3xl font-bold text-center">{category.toUpperCase()} Reports</h1>
+      </div>
 
       {dates.length === 0 ? (
         <p className="text-center text-gray-600">
@@ -49,7 +49,7 @@ function ReportDates() {
               <div
                 key={date}
                 onClick={() => handleDateClick(date)}
-                className="bg-white shadow-md rounded-2xl p-6 text-center cursor-pointer hover:shadow-lg hover:bg-green-100 transition duration-200 w-64 h-28 flex items-center justify-center"
+                className="bg-white text-black shadow-md rounded-2xl p-6 text-center cursor-pointer hover:bg-blue-500 hover:text-white transition duration-200 w-64 h-28 flex items-center justify-center"
               >
                 <h2 className="text-xl font-semibold">{formattedDate}</h2>
               </div>

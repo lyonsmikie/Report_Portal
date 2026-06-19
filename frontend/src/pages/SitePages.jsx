@@ -45,7 +45,9 @@ function SitePages() {
       {/* 🔥 NEW: Unified top bar with Logout only */}
       <HeaderBar backLinks={[]} />
 
-      <h1 className="text-3xl font-bold mb-6 text-center">Select a Site</h1>
+      <div className="w-full bg-gray-200 py-4 mb-6">
+        <h1 className="text-3xl font-bold text-center">Select a Site</h1>
+      </div>
 
       <div className="flex flex-wrap justify-center items-stretch gap-6 max-w-4xl w-full">
         {visibleSites.length > 0 ? (
@@ -53,7 +55,7 @@ function SitePages() {
             <div
               key={site.key}
               onClick={() => handleSelectSite(site.key)}
-              className={`bg-white shadow-md rounded-2xl p-8 text-center cursor-pointer ${site.color} transition duration-200 w-80 h-40 flex flex-col justify-center items-center`}
+              className={`bg-white text-black shadow-md rounded-2xl p-8 text-center cursor-pointer ${site.color} transition duration-200 w-80 h-40 flex flex-col justify-center items-center hover:bg-blue-500 hover:text-white`}
             >
               <h2 className="text-2xl font-semibold mb-2">{site.title}</h2>
               <p>{site.description}</p>
