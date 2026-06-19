@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api";
 import HeaderBar from "../components/HeaderBar";
+import Sidebar from "../components/Sidebar";
 
 function UploadReport() {
   const navigate = useNavigate();
@@ -112,23 +113,17 @@ function UploadReport() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      {/* Full-width header + title */}
+      <HeaderBar backLinks={[]} />
+      <div className="w-full bg-gray-200 py-4 mb-6">
+        <h1 className="text-3xl font-bold text-center">Upload Report</h1>
+      </div>
 
-      {/* 🔥 NEW — Top navigation with logout + left-side back links */}
-      <HeaderBar
-        backLinks={[
-          { label: "Back to Site Selection", path: "/sites" },
-          { label: "Back to Dashboard", path: `/${site_name}/dashboard` },
-        ]}
-      />
+      <div className="flex">
+        <Sidebar backLinks={[{ label: "Back to Site Selection", path: "/sites" }, { label: "Back to Dashboard", path: `/${site_name}/dashboard` }]} />
 
-      <h1 className="text-3xl font-bold mt-6 mb-6 text-center">
-        Upload Report
-      </h1>
-
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-md mx-auto bg-white p-6 rounded shadow space-y-4"
-      >
+        <main className="flex-1 px-6">
+          <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white p-6 rounded shadow space-y-4">
         <div>
           <label className="block mb-1 font-semibold">Select Category</label>
           <select
@@ -182,11 +177,11 @@ function UploadReport() {
         {message && (
           <p className="mt-2 text-center text-gray-700">{message}</p>
         )}
-      </form>
+          </form>
 
       {/* Options for overwrite / save-as-new */}
-      {showOptions && (
-        <div className="max-w-md mx-auto mt-4 p-4 bg-yellow-100 rounded shadow text-center space-y-2">
+          {showOptions && (
+            <div className="max-w-md mx-auto mt-4 p-4 bg-yellow-100 rounded shadow text-center space-y-2">
           <p className="font-semibold">
             A report already exists for this category and date.
           </p>
@@ -211,8 +206,10 @@ function UploadReport() {
           >
             Cancel
           </button>
-        </div>
-      )}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
